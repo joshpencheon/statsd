@@ -336,8 +336,8 @@ class Statsd
   # @param [String] stat stat name
   # @param [Numeric] sample_rate sample rate, 1 for always
   # @see #count
-  def increment(stat, sample_rate=1)
-    count stat, 1, sample_rate
+  def increment(stat, sample_rate=1, **tags)
+    count stat, 1, sample_rate, **tags
   end
 
   # Sends a decrement (count = -1) for the given stat to the statsd server.
@@ -345,8 +345,8 @@ class Statsd
   # @param [String] stat stat name
   # @param [Numeric] sample_rate sample rate, 1 for always
   # @see #count
-  def decrement(stat, sample_rate=1)
-    count stat, -1, sample_rate
+  def decrement(stat, sample_rate=1, **tags)
+    count stat, -1, sample_rate, **tags
   end
 
   # Sends an arbitrary count for the given stat to the statsd server.
@@ -354,8 +354,8 @@ class Statsd
   # @param [String] stat stat name
   # @param [Integer] count count
   # @param [Numeric] sample_rate sample rate, 1 for always
-  def count(stat, count, sample_rate=1)
-    send_stats stat, count, :c, sample_rate
+  def count(stat, count, sample_rate=1, **tags)
+    send_stats stat, count, :c, sample_rate, **tags
   end
 
   # Sends an arbitary gauge value for the given stat to the statsd server.
@@ -369,8 +369,8 @@ class Statsd
   # @param [Numeric] sample_rate sample rate, 1 for always
   # @example Report the current user count:
   #   $statsd.gauge('user.count', User.count)
-  def gauge(stat, value, sample_rate=1)
-    send_stats stat, value, :g, sample_rate
+  def gauge(stat, value, sample_rate=1, **tags)
+    send_stats stat, value, :g, sample_rate, **tags
   end
 
   # Sends an arbitary set value for the given stat to the statsd server.
@@ -385,8 +385,8 @@ class Statsd
   # @param [Numeric] sample_rate sample rate, 1 for always
   # @example Report a deployment happening:
   #   $statsd.set('deployment', DEPLOYMENT_EVENT_CODE)
-  def set(stat, value, sample_rate=1)
-    send_stats stat, value, :s, sample_rate
+  def set(stat, value, sample_rate=1, **tags)
+    send_stats stat, value, :s, sample_rate, **tags
   end
 
   # Sends a timing (in ms) for the given stat to the statsd server. The
@@ -397,8 +397,8 @@ class Statsd
   # @param [String] stat stat name
   # @param [Integer] ms timing in milliseconds
   # @param [Numeric] sample_rate sample rate, 1 for always
-  def timing(stat, ms, sample_rate=1)
-    send_stats stat, ms, :ms, sample_rate
+  def timing(stat, ms, sample_rate=1, **tags)
+    send_stats stat, ms, :ms, sample_rate, **tags
   end
 
   # Reports execution time of the provided block using {#timing}.
@@ -482,12 +482,15 @@ class Statsd
 
   private
 
-  def send_stats(stat, delta, type, sample_rate=1)
+  def send_stats(stat, delta, type, sample_rate, **tags)
     if sample_rate == 1 or rand < sample_rate
+      dogtags = tags.map { |k, v| "#{k}:#{v}" }.join(',')
+      dogtags = "|##{dogtags}" unless dogtags.empty?
+
       # Replace Ruby module scoping with '.' and reserved chars (: | @) with underscores.
       stat = stat.to_s.gsub('::', delimiter).tr(':|@', '_')
       rate = "|@#{sample_rate}" unless sample_rate == 1
-      send_to_socket "#{prefix}#{stat}#{postfix}:#{delta}|#{type}#{rate}"
+      send_to_socket "#{prefix}#{stat}#{postfix}:#{delta}|#{type}#{rate}#{dogtags}"
     end
   end
 
