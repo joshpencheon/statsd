@@ -224,6 +224,13 @@ describe Statsd do
         @statsd.time('foobar', 0.5) { 'test' }
         @socket.recv.must_equal ['foobar:0|ms|@0.5']
       end
+
+      describe "with tags" do
+        it "should format the message according to the statsd spec" do
+          @statsd.time('foobar', 0.5, tag_a: 'val_a', tag_b: 'val_b') { 'test' }
+          @socket.recv.must_equal ['foobar:0|ms|@0.5|#tag_a:val_a,tag_b:val_b']
+        end
+      end
     end
 
     describe "with tags" do

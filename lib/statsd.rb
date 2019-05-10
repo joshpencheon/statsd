@@ -409,11 +409,11 @@ class Statsd
   # @see #timing
   # @example Report the time (in ms) taken to activate an account
   #   $statsd.time('account.activate') { @account.activate! }
-  def time(stat, sample_rate=1)
+  def time(stat, sample_rate=1, **tags)
     start = MonotonicTime.time_in_ms
     result = yield
   ensure
-    timing(stat, (MonotonicTime.time_in_ms - start).round, sample_rate)
+    timing(stat, (MonotonicTime.time_in_ms - start).round, sample_rate, **tags)
     result
   end
 
